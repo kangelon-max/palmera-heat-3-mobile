@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Palmera Heat III</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin:0; padding:0; overflow:hidden; background:#0b1026; font-family:"Avenir Next","Segoe UI",system-ui,sans-serif; color:#fff; }
+  #scene { position:fixed; inset:0; display:block; }
+  .hidden { display:none !important; }
+
+  /* ---------- shared premium button language ---------- */
+  .pbtn { position:relative; border:1px solid rgba(255,255,255,.28); border-radius:16px; cursor:pointer;
+    color:#fff; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    background:linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.04) 45%, rgba(0,0,0,.18)), linear-gradient(135deg,#ff9a3d,#ff5f6d 55%,#b83a8c);
+    box-shadow:0 10px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -8px 16px rgba(0,0,0,.22);
+    padding:14px 30px; font-size:17px; overflow:hidden; transition:transform .08s ease, filter .15s ease; }
+  .pbtn::after { content:""; position:absolute; top:0; left:-70%; width:45%; height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); transform:skewX(-18deg); transition:left .45s ease; }
+  .pbtn:hover { filter:brightness(1.12); }
+  .pbtn:hover::after { left:115%; }
+  .pbtn:active { transform:scale(.96); }
+  .pbtn.secondary { background:linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.03) 45%, rgba(0,0,0,.20)), linear-gradient(135deg,#2ec4b6,#2076b8 60%,#274690); font-size:14px; padding:11px 22px; }
+
+  /* ---------- title screen ---------- */
+  #title { position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    background:linear-gradient(180deg, rgba(10,8,30,.06) 40%, rgba(10,8,30,.55)); }
+  #logo { text-align:center; line-height:.92; text-shadow:0 6px 0 rgba(90,10,60,.55), 0 18px 44px rgba(0,0,0,.6); }
+  #logo .l1 { font-size:34px; font-weight:900; letter-spacing:.42em; color:#ffe9b0; }
+  #logo .l2 { font-size:104px; font-weight:900; letter-spacing:.02em;
+    background:linear-gradient(180deg,#fff6d8 8%,#ffb347 38%,#ff5f6d 62%,#c63d8f 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  #logo .l3 { font-size:21px; font-weight:800; letter-spacing:.58em; color:#aef3ff; margin-top:6px; }
+  #title .tag { font-size:15px; color:#ffe9c9; text-shadow:0 2px 10px #000; letter-spacing:.08em; }
+  #menu { display:flex; flex-direction:column; gap:12px; margin-top:12px; min-width:300px; }
+  #title .hint { position:absolute; bottom:18px; font-size:12.5px; color:rgba(255,255,255,.85); text-shadow:0 1px 6px #000; letter-spacing:.05em; }
+
+  /* ---------- HUD frame ---------- */
+  #hud { position:fixed; inset:0; z-index:20; pointer-events:none; }
+  .card { background:linear-gradient(160deg, rgba(12,16,38,.82), rgba(12,16,38,.62)); border:1px solid rgba(255,255,255,.16);
+    border-radius:14px; box-shadow:0 8px 22px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.14); backdrop-filter:blur(3px); }
+  #missionCard { position:absolute; top:16px; left:16px; width:308px; padding:12px 14px; }
+  #missionCard .kicker { font-size:10.5px; letter-spacing:.22em; color:#ffb347; font-weight:800; }
+  #missionCard .name { font-size:19px; font-weight:900; margin:2px 0; }
+  #missionCard .stage { font-size:12.5px; color:#cfe8ff; }
+  #missionCard .obj { font-size:13px; color:#fff; margin-top:5px; }
+  #missionCard .bar { height:7px; border-radius:4px; background:rgba(255,255,255,.16); margin-top:8px; overflow:hidden; }
+  #missionCard .bar i { display:block; height:100%; width:40%; border-radius:4px; background:linear-gradient(90deg,#ffb347,#ff5f6d); }
+  #stats { position:absolute; top:16px; right:16px; padding:10px 16px; text-align:right; min-width:212px; }
+  #stats .clock { font-size:22px; font-weight:900; letter-spacing:.08em; }
+  #stats .phase { font-size:11px; letter-spacing:.24em; color:#aef3ff; font-weight:800; }
+  #stats .money { font-size:19px; font-weight:900; color:#8dff9a; }
+  #stats .sub { font-size:12px; color:#e8ecff; }
+  #stars { font-size:19px; color:#ffd23e; letter-spacing:.14em; text-shadow:0 0 10px rgba(255,180,0,.7); }
+  #stars .off { color:rgba(255,255,255,.22); text-shadow:none; }
+  #district { position:absolute; top:138px; right:16px; font-size:12px; letter-spacing:.18em; font-weight:800; color:#ffe9b0; text-shadow:0 2px 8px #000; text-align:right; }
+  #weapons { position:absolute; right:16px; top:186px; display:flex; flex-direction:column; gap:7px; }
+  .wslot { width:172px; padding:7px 11px; display:flex; justify-content:space-between; align-items:center; border-radius:12px;
+    background:linear-gradient(160deg, rgba(12,16,38,.66), rgba(12,16,38,.5)); border:1px solid rgba(255,255,255,.13); font-size:12.5px; }
+  .wslot b { font-size:13px; letter-spacing:.04em; }
+  .wslot .ammo { color:#aef3ff; font-weight:800; }
+  .wslot.sel { border-color:#ffb347; box-shadow:0 0 0 1px #ffb347, 0 0 18px rgba(255,160,60,.35); background:linear-gradient(160deg, rgba(80,40,10,.8), rgba(40,16,40,.65)); }
+  #response { position:absolute; left:16px; bottom:292px; width:248px; padding:10px 12px; }
+  #response .kicker { font-size:10.5px; letter-spacing:.22em; color:#ff8f8f; font-weight:800; }
+  #response .unit { display:flex; justify-content:space-between; font-size:12.5px; margin-top:5px; color:#ffecec; }
+  #response .unit em { color:#aef3ff; font-style:normal; }
+  #crewCard { position:absolute; left:16px; bottom:196px; width:228px; padding:10px 12px; display:flex; gap:10px; align-items:center; }
+  #crewCard .face { width:44px; height:44px; border-radius:50%; flex:none; border:2px solid #ffb347;
+    background:radial-gradient(circle at 35% 32%, #f2c79b 0 26%, #c98a5a 27% 55%, #243b6b 56%); box-shadow:inset 0 -8px 12px rgba(0,0,0,.35); }
+  #crewCard .who b { font-size:14.5px; } #crewCard .who div { font-size:11.5px; color:#cfe8ff; }
+  #crewCard .ability { font-size:11px; color:#ffd23e; font-weight:800; letter-spacing:.05em; }
+  #dialogue { position:absolute; left:50%; transform:translateX(-50%); bottom:118px; width:560px; max-width:72vw; padding:12px 16px; }
+  #dialogue .who { font-size:11px; letter-spacing:.22em; color:#ffb347; font-weight:800; }
+  #dialogue .line { font-size:15.5px; margin-top:2px; }
+  #vehicleHud { position:absolute; right:16px; bottom:120px; padding:10px 14px; text-align:right; }
+  #vehicleHud .speed { font-size:34px; font-weight:900; line-height:1; }
+  #vehicleHud .speed small { font-size:12px; color:#aef3ff; letter-spacing:.14em; }
+  #vehicleHud .vname { font-size:13px; font-weight:800; letter-spacing:.05em; }
+  #vehicleHud .dmg { font-size:11.5px; color:#ffb0b0; }
+  #vehicleHud .radio { font-size:11px; color:#aef3ff; letter-spacing:.1em; }
+  #radarWrap { position:absolute; left:16px; bottom:16px; width:172px; height:172px; }
+  #radar { width:172px; height:172px; border-radius:50%; border:2px solid rgba(255,255,255,.35); box-shadow:0 10px 26px rgba(0,0,0,.5); background:rgba(8,20,16,.8); }
+  #bars { position:absolute; left:202px; bottom:22px; width:190px; }
+  .barRow { display:flex; align-items:center; gap:8px; margin-top:5px; font-size:10.5px; font-weight:800; letter-spacing:.14em; }
+  .barRow .track { flex:1; height:9px; border-radius:5px; background:rgba(255,255,255,.16); overflow:hidden; }
+  .barRow .track i { display:block; height:100%; }
+  #hpFill { background:linear-gradient(90deg,#37d67a,#8dff9a); width:100%; }
+  #arFill { background:linear-gradient(90deg,#39a0ff,#aef3ff); width:40%; }
+  #prompt { position:absolute; left:50%; transform:translateX(-50%); bottom:64px; padding:9px 20px; font-size:14px; font-weight:800; letter-spacing:.05em;
+    border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.05)), linear-gradient(135deg, rgba(32,119,184,.92), rgba(39,70,144,.92));
+    border:1px solid rgba(255,255,255,.4); box-shadow:0 8px 20px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6); }
+
+  /* ---------- the SUMMON button ---------- */
+  #summonBtn { position:absolute; right:26px; bottom:236px; width:118px; height:118px; border-radius:50%; pointer-events:auto; cursor:pointer;
+    border:3px solid #6b4423; color:#fff8ea;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255,255,255,.5), rgba(255,255,255,0) 42%),
+      repeating-radial-gradient(circle at 50% 50%, #a9743f 0 9px, #96622f 9px 18px, #7d4f22 18px 27px),
+      radial-gradient(circle, #a9743f, #6f4520);
+    box-shadow:0 14px 30px rgba(0,0,0,.55), inset 0 3px 8px rgba(255,255,255,.5), inset 0 -12px 20px rgba(40,20,0,.55), 0 0 0 5px rgba(255,170,60,.22), 0 0 34px rgba(255,150,50,.45);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    font-weight:900; letter-spacing:.08em; animation:pulseGlow 1.6s ease-in-out infinite; transition:transform .08s ease; }
+  #summonBtn .bat { font-size:30px; line-height:1; filter:drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
+  #summonBtn .lbl { font-size:14px; text-shadow:0 2px 4px rgba(0,0,0,.65); }
+  #summonBtn .sub { font-size:9px; letter-spacing:.18em; opacity:.9; text-shadow:0 1px 3px rgba(0,0,0,.7); }
+  #summonBtn:active { transform:scale(.93); }
+  #summonBtn.cooling { animation:none; filter:saturate(.45) brightness(.8); box-shadow:0 10px 22px rgba(0,0,0,.5), inset 0 -10px 18px rgba(40,20,0,.5); }
+  @keyframes pulseGlow { 0%,100% { box-shadow:0 14px 30px rgba(0,0,0,.55), inset 0 3px 8px rgba(255,255,255,.5), inset 0 -12px 20px rgba(40,20,0,.55), 0 0 0 5px rgba(255,170,60,.18), 0 0 26px rgba(255,150,50,.35);} 50% { box-shadow:0 14px 30px rgba(0,0,0,.55), inset 0 3px 8px rgba(255,255,255,.55), inset 0 -12px 20px rgba(40,20,0,.55), 0 0 0 8px rgba(255,170,60,.30), 0 0 48px rgba(255,160,50,.65);} }
+  #loud { position:absolute; top:86px; left:50%; transform:translateX(-50%); padding:8px 22px; font-size:14px; font-weight:800; letter-spacing:.1em; color:#ffe9b0;
+    background:linear-gradient(160deg, rgba(60,10,10,.85), rgba(30,8,20,.8)); border:1px solid rgba(255,120,120,.5); border-radius:999px; box-shadow:0 8px 22px rgba(0,0,0,.5); }
+
+  /* ---------- map + completion ---------- */
+  #mapWrap { position:fixed; inset:0; z-index:30; background:rgba(5,10,24,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+  #mapWrap .mtitle { font-size:22px; font-weight:900; letter-spacing:.3em; color:#ffe9b0; }
+  #mapCanvas { border:2px solid rgba(255,255,255,.3); border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  #done { position:fixed; inset:0; z-index:35; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:rgba(6,8,24,.78); }
+  #done .big { font-size:52px; font-weight:900; letter-spacing:.06em; color:#ffe9b0; text-shadow:0 8px 30px #000; }
+  #toast { position:absolute; top:150px; left:50%; transform:translateX(-50%); font-size:17px; font-weight:900; letter-spacing:.08em; color:#8dff9a; text-shadow:0 2px 12px #000; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="missionCard" class="card">
+    <div class="kicker" id="mcKicker">STORY JOB 1 / 6 · MARLA VOSS</div>
+    <div class="name" id="mcName">Port Run</div>
+    <div class="stage" id="mcStage">STAGE 1/2 — pick up the package</div>
+    <div class="obj" id="mcObj">Drive to the Port of Palmera docks.</div>
+    <div class="bar"><i id="mcBar"></i></div>
+  </div>
+  <div id="stats" class="card">
+    <div class="clock" id="clock">17:54</div>
+    <div class="phase" id="phase">GOLDEN HOUR</div>
+    <div class="money" id="money">Ŧ350</div>
+    <div class="sub">RESPECT <b id="respect">12</b> · PALMERA <b id="standing">NEUTRAL · 55</b></div>
+    <div id="stars"></div>
+  </div>
+  <div id="district">BEACHFRONT · Palmera Pier</div>
+  <div id="weapons"></div>
+  <div id="response" class="card hidden">
+    <div class="kicker">PBPD RESPONSE</div>
+    <div id="responseList"></div>
+  </div>
+  <div id="crewCard" class="card">
+    <div class="face"></div>
+    <div class="who"><b>DRE — CREW</b><div>Wheelman · rides shotgun</div><div class="ability">[G] DRAW HEAT · decoy 10s</div></div>
+  </div>
+  <div id="dialogue" class="card hidden"><div class="who" id="dlgWho">MARLA VOSS</div><div class="line" id="dlgLine"></div></div>
+  <div id="vehicleHud" class="card hidden">
+    <div class="speed"><span id="speed">0</span> <small>KM/H</small></div>
+    <div class="vname" id="vname">—</div>
+    <div class="dmg" id="dmg">DAMAGE 0%</div>
+    <div class="radio" id="radio">♪ RADIO PALMERA 98.3</div>
+  </div>
+  <div id="radarWrap"><canvas id="radar" width="172" height="172"></canvas></div>
+  <div id="bars">
+    <div class="barRow">HEALTH <div class="track"><i id="hpFill"></i></div></div>
+    <div class="barRow">ARMOUR <div class="track"><i id="arFill"></i></div></div>
+  </div>
+  <div id="summonBtn"><div class="bat">🪵</div><div class="lbl">SUMMON</div><div class="sub">TUNG SAHUR</div></div>
+  <div id="prompt" class="hidden"></div>
+  <div id="loud" class="hidden"></div>
+  <div id="toast" class="hidden"></div>
+</div>
+
+<div id="mapWrap" class="hidden">
+  <div class="mtitle">PALMERA BAY</div>
+  <canvas id="mapCanvas" width="880" height="600"></canvas>
+  <button class="pbtn secondary" id="mapClose">Close map [M]</button>
+</div>
+
+<div id="done" class="hidden">
+  <div class="big">PALMERA IS YOURS</div>
+  <div id="doneStats" style="font-size:16px;color:#cfe8ff"></div>
+  <button class="pbtn" id="doneBtn">Keep cruising</button>
+</div>
+
+<div id="title">
+  <div id="logo"><div class="l1">P A L M E R A</div><div class="l2">HEAT</div><div class="l3">I I I</div></div>
+  <div class="tag">Six jobs. One crew. A whole bay to burn.</div>
+  <div id="menu">
+    <button class="pbtn" id="btnContinue">Continue</button>
+    <button class="pbtn" id="btnNew">New Game</button>
+    <button class="pbtn secondary" id="btnSettings">Settings</button>
+  </div>
+  <div class="hint">WASD drive · F enter car · 1–4 weapons · Click fire · G crew decoy · T summon · L time of day · M map</div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="src/sky.js"></script>
+<script src="src/world.js"></script>
+<script src="src/vehicles.js"></script>
+<script src="src/people.js"></script>
+<script src="src/police.js"></script>
+<script src="src/jobs.js"></script>
+<script src="src/sahur.js"></script>
+<script src="src/hud.js"></script>
+<script src="src/main.js"></script>
+<script src="touch.js"></script>
+</body>
+</html>
